@@ -60,7 +60,11 @@ function createWindow() {
 // ---- IPC: network proxy so renderer never hits CORS ----
 ipcMain.handle('fetch-json', async (_e, url, headers = {}) => {
   const res = await fetch(url, { headers: { accept: 'application/json', ...headers } });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+  if (!res.ok) {
+    let detail = '';
+    try { const b = await res.json(); detail = b.msg || b.message || ''; } catch {}
+    throw new Error(`${res.status}${detail ? ' – ' + detail : ' ' + res.statusText}`);
+  }
   return res.json();
 });
 

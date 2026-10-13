@@ -39,30 +39,29 @@ async function fetchWeekly() {
 async function fetchLiquidations() {
   const key = state.settings.coinglassKey;
   if (!key) { state.liqErr = 'Add a Coinglass API key in ⚙ to score longs vs shorts'; state.liqLong = state.liqShort = null; return; }
-  const headers = { 'CG-API-KEY': key };
-  const urls = [
-    'https://open-api-v4.coinglass.com/api/futures/liquidation/aggregated-history?exchange_list=Binance,OKX,Bybit&symbol=BTC&interval=1d&limit=30',
-    'https://open-api-v4.coinglass.com/api/futures/liquidation/coin-history?symbol=BTC&interval=1d&limit=30'
-  ];
-  let lastErr;
-  for (const u of urls) {
+  const headers = { 'CG-API-KEY': key.trim() };
+  const base = 'https://open-api-v4.coinglass.com/api/futures/liquidation/aggregated-history?symbol=BTC&interval=1d&limit=30&exchange_list=';
+  // Same endpoint; try the major-exchange aggregate first, then Binance alone.
+  const lists = ['Binance, OKX, Bybit', 'Binance'];
+  let firstErr;
+  for (const list of lists) {
     try {
-      const j = await window.api.fetchJson(u, headers);
-      const rows = Array.isArray(j.data) ? j.data : (j.data?.list || []);
-      if (!rows.length) throw new Error('empty');
+      const j = await window.api.fetchJson(base + encodeURIComponent(list), headers);
+      // Coinglass reports problems in the body: { code: "<non-zero>", msg: "..." }
+      if (j && j.code != null && String(j.code) !== '0') throw new Error(j.msg || `error code ${j.code}`);
+      const rows = Array.isArray(j.data) ? j.data : [];
+      if (!rows.length) throw new Error('no data returned');
       let L = 0, S = 0;
       for (const r of rows.slice(-30)) {
-        for (const [k, v] of Object.entries(r)) {
-          const kl = k.toLowerCase();
-          if (kl.includes('long') && kl.includes('liquidation')) L += Number(v) || 0;
-          if (kl.includes('short') && kl.includes('liquidation')) S += Number(v) || 0;
-        }
+        L += Number(r.aggregated_long_liquidation_usd) || 0;
+        S += Number(r.aggregated_short_liquidation_usd) || 0;
       }
       state.liqLong = L; state.liqShort = S; state.liqErr = null;
       return;
-    } catch (e) { lastErr = e; }
+    } catch (e) { if (!firstErr) firstErr = e; }
   }
-  state.liqErr = `Coinglass: ${lastErr?.message || 'error'}`; state.liqLong = state.liqShort = null;
+  const msg = String(firstErr?.message || 'error').replace(/^Error invoking remote method 'fetch-json': (Error: )?/, '');
+  state.liqErr = `Coinglass says: ${msg}`; state.liqLong = state.liqShort = null;
 }
 
 // ---------- drawing ----------
