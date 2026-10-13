@@ -4,7 +4,7 @@ const fs = require('fs');
 
 const SETTINGS_PATH = () => path.join(app.getPath('userData'), 'settings.json');
 const DEFAULTS = {
-  coinglassKey: '',
+  mode: 'trend',
   bounds: null,
   opacity: 1.0,
   refreshMs: 5000
@@ -24,7 +24,7 @@ let settings;
 function createWindow() {
   settings = loadSettings();
   const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
-  const W = 760, H = 520;
+  const W = 860, H = 640;
   const bounds = settings.bounds || { x: sw - W - 20, y: sh - H - 20, width: W, height: H };
 
   win = new BrowserWindow({
@@ -41,7 +41,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      webviewTag: true
+      webviewTag: false
     }
   });
 
@@ -77,6 +77,13 @@ ipcMain.handle('set-settings', (_e, patch) => {
 });
 ipcMain.on('window-close', () => win && win.close());
 ipcMain.on('window-minimize', () => win && win.minimize());
+ipcMain.handle('toggle-fullscreen', () => {
+  if (!win) return false;
+  const next = !win.isFullScreen();
+  win.setFullScreen(next);
+  return next;
+});
+ipcMain.on('exit-fullscreen', () => { if (win && win.isFullScreen()) win.setFullScreen(false); });
 ipcMain.on('toggle-pin', (_e, pinned) => {
   if (!win) return;
   win.setAlwaysOnTop(pinned, 'screen-saver');

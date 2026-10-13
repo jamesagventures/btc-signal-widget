@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src https://www.coinglass.com https://*.coinglass.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
 <title>BTC Signal Widget</title>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -10,71 +10,100 @@
   <header id="titlebar">
     <div class="drag">
       <span class="dot"></span>
-      <span class="title">BTC Signal</span>
-      <span id="updated" class="muted">—</span>
+      <span class="title">BTC Signal <small class="ver">v3</small></span>
+      <span id="updated" class="muted">loading…</span>
     </div>
     <div class="controls">
-      <button id="pin" class="icon on" title="Always on top">📌</button>
+      <button id="pin" class="icon on" title="Keep on top">📌</button>
       <button id="gear" class="icon" title="Settings">⚙</button>
+      <button id="full" class="icon" title="Full screen">⛶</button>
       <button id="min" class="icon" title="Minimize">–</button>
       <button id="close" class="icon" title="Close">✕</button>
     </div>
   </header>
 
-  <div id="signal" class="signal hold">
-    <span id="signal-text">HOLD</span>
-    <span id="signal-votes" class="votes"></span>
+  <div id="signal" class="signal wait">
+    <div class="call-wrap">
+      <span id="call" class="call">LOADING</span>
+      <span id="since" class="why"></span>
+    </div>
+    <div class="votes-wrap">
+      <span id="votes" class="score">—</span>
+      <span class="muted">vote</span>
+    </div>
+    <div id="preview" class="preview hidden"></div>
   </div>
 
-  <main class="grid">
-    <section class="panel" id="p-fg">
-      <h2>Fear &amp; Greed <span class="vote" data-k="fearGreed"></span></h2>
-      <div class="big"><span id="fg-val">—</span></div>
-      <div id="fg-label" class="sub">—</div>
-      <div class="meter"><div id="fg-bar"></div></div>
-      <div class="rule muted">buy &lt;30 · sell &gt;70</div>
-    </section>
-
-    <section class="panel" id="p-liq">
-      <h2>Liquidation Map · 30d <span class="vote" data-k="liquidation"></span></h2>
-      <div class="liq-stats">
-        <div><span class="muted">Longs</span><b id="liq-long">—</b></div>
-        <div><span class="muted">Shorts</span><b id="liq-short">—</b></div>
-        <div><span class="muted">Ratio</span><b id="liq-ratio">—</b></div>
-      </div>
-      <webview id="liq-view" partition="persist:coinglass" src="https://www.coinglass.com/pro/futures/LiquidationMap?coin=BTC" allowpopups="false"></webview>
-      <div id="liq-note" class="rule muted">longs ≥4× shorts → sell · shorts ≥4× longs → buy</div>
-    </section>
-
-    <section class="panel" id="p-ind">
-      <h2>Weekly RSI &amp; MACD <span class="vote" data-k="rsi"></span><span class="vote" data-k="macd"></span></h2>
-      <div class="ind-row"><span>RSI(14)</span><b id="rsi-val">—</b><span id="rsi-dir" class="dir"></span></div>
-      <canvas id="rsi-chart" height="70"></canvas>
-      <div class="ind-row"><span>MACD(12,26,9)</span><b id="macd-val">—</b><span id="macd-dir" class="dir"></span></div>
-      <canvas id="macd-chart" height="70"></canvas>
-      <div class="rule muted">RSI: &lt;30 &amp; rising → buy · &gt;70 &amp; falling → sell · MACD: up → buy · down → sell (vs prev week)</div>
+  <main class="grid" id="grid">
+    <section class="panel" id="p-sig">
+      <h2>Signals <button class="max" title="Maximize">⤢</button></h2>
+      <div id="sigs" class="sigs"></div>
+      <div class="rule muted">Hold BTC when the weighted vote is above 0 · checked at each daily close (7 PM CT)</div>
     </section>
 
     <section class="panel" id="p-price">
-      <h2>BTC / USD</h2>
-      <div class="big price"><span id="price">—</span></div>
-      <div class="sub"><span id="chg" class="chg">—</span> <span class="muted">24h</span></div>
-      <div class="ind-row"><span class="muted">High</span><b id="hi">—</b></div>
-      <div class="ind-row"><span class="muted">Low</span><b id="lo">—</b></div>
-      <canvas id="spark" height="48"></canvas>
+      <h2>BTC / USD <span class="tag" id="trend-tag"></span><button class="max" title="Maximize">⤢</button></h2>
+      <div class="price-row">
+        <span class="big" id="price">—</span>
+        <span id="chg" class="chg">—</span>
+      </div>
+      <div class="kv3">
+        <div><span class="muted">200-day avg</span><b id="sma">—</b></div>
+        <div><span class="muted">200-week avg</span><b id="w200">—</b></div>
+        <div><span class="muted">Price ÷ 200-day</span><b id="mayer">—</b></div>
+      </div>
+      <canvas id="price-chart"></canvas>
+      <div class="legend muted"><i class="lg in"></i>holding BTC <i class="lg out"></i>in cash <i class="lg ma"></i>200-day <i class="lg wk"></i>200-week</div>
+    </section>
+
+    <section class="panel" id="p-cycle">
+      <h2>Cycle &amp; tops <button class="max" title="Maximize">⤢</button></h2>
+      <div class="kv"><span>Days since halving</span><b id="hdays">—</b></div>
+      <div class="clock"><div class="zone" id="zone"></div><div class="needle" id="needle"></div></div>
+      <div class="muted" id="clock-note">—</div>
+      <div class="kv gap"><span>Pi Cycle top gauge</span><b id="pi">—</b></div>
+      <div class="gauge"><i id="pi-bar"></i></div>
+      <div class="muted" id="pi-note">Fires at 100% — has marked every major top so far</div>
+      <div class="kv gap"><span>Weekly MACD histogram</span><b id="wh">—</b></div>
+      <canvas id="wmacd-chart"></canvas>
+    </section>
+
+    <section class="panel" id="p-ctx">
+      <h2>Context <span class="tag muted-tag">not part of the signal</span><button class="max" title="Maximize">⤢</button></h2>
+      <div class="sent-grid">
+        <div class="cell">
+          <span class="muted">Fear &amp; Greed</span>
+          <b id="fg-val" class="mid">—</b>
+          <span id="fg-label" class="muted">—</span>
+          <div class="meter"><div id="fg-bar"></div></div>
+        </div>
+        <div class="cell">
+          <span class="muted">Funding (per hr)</span>
+          <b id="fund-val" class="mid">—</b>
+          <span id="fund-pct" class="muted">—</span>
+        </div>
+        <div class="cell">
+          <span class="muted">Open interest 7d</span>
+          <b id="oi-val" class="mid">—</b>
+          <span id="oi-note" class="muted">—</span>
+        </div>
+        <div class="cell" id="crash-cell">
+          <span class="muted">Flash crash watch</span>
+          <b id="crash-val" class="mid">—</b>
+          <span id="crash-note" class="muted">—</span>
+        </div>
+      </div>
+      <div class="rule muted">Leverage &amp; sentiment have no long history, so they were not backtested</div>
     </section>
   </main>
 
   <div id="settings" class="modal hidden">
     <div class="card">
       <h3>Settings</h3>
-      <label>Coinglass API key <small>(needed for long/short numbers; map works without it)</small>
-        <input id="s-key" type="password" placeholder="paste key">
-      </label>
-      <label>Refresh (seconds) <input id="s-refresh" type="number" min="2" max="300" step="1"></label>
+      <label>Price refresh (seconds) <input id="s-refresh" type="number" min="2" max="300" step="1"></label>
       <label>Opacity <input id="s-opacity" type="range" min="0.4" max="1" step="0.05"></label>
       <div class="row"><button id="s-save">Save</button><button id="s-cancel" class="ghost">Cancel</button></div>
-      <div id="s-err" class="err"></div>
+      <p class="muted small">Backtest 2020–2026 (data the model never trained on): 53%/yr, worst drop −48%, vs holding 44%/yr, worst −77%. Past results don't guarantee future ones. Not financial advice.</p>
     </div>
   </div>
 
