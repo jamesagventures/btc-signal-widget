@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src https://www.coinglass.com https://*.coinglass.com;">
+<title>BTC Signal Widget</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header id="titlebar">
+    <div class="drag">
+      <span class="dot"></span>
+      <span class="title">BTC Signal</span>
+      <span id="updated" class="muted">—</span>
+    </div>
+    <div class="controls">
+      <button id="pin" class="icon on" title="Always on top">📌</button>
+      <button id="gear" class="icon" title="Settings">⚙</button>
+      <button id="min" class="icon" title="Minimize">–</button>
+      <button id="close" class="icon" title="Close">✕</button>
+    </div>
+  </header>
+
+  <div id="signal" class="signal hold">
+    <span id="signal-text">HOLD</span>
+    <span id="signal-votes" class="votes"></span>
+  </div>
+
+  <main class="grid">
+    <section class="panel" id="p-fg">
+      <h2>Fear &amp; Greed <span class="vote" data-k="fearGreed"></span></h2>
+      <div class="big"><span id="fg-val">—</span></div>
+      <div id="fg-label" class="sub">—</div>
+      <div class="meter"><div id="fg-bar"></div></div>
+      <div class="rule muted">buy &lt;30 · sell &gt;70</div>
+    </section>
+
+    <section class="panel" id="p-liq">
+      <h2>Liquidation Map · 30d <span class="vote" data-k="liquidation"></span></h2>
+      <div class="liq-stats">
+        <div><span class="muted">Longs</span><b id="liq-long">—</b></div>
+        <div><span class="muted">Shorts</span><b id="liq-short">—</b></div>
+        <div><span class="muted">Ratio</span><b id="liq-ratio">—</b></div>
+      </div>
+      <webview id="liq-view" partition="persist:coinglass" src="https://www.coinglass.com/pro/futures/LiquidationMap?coin=BTC" allowpopups="false"></webview>
+      <div id="liq-note" class="rule muted">longs ≥4× shorts → sell · shorts ≥4× longs → buy</div>
+    </section>
+
+    <section class="panel" id="p-ind">
+      <h2>Weekly RSI &amp; MACD <span class="vote" data-k="rsi"></span><span class="vote" data-k="macd"></span></h2>
+      <div class="ind-row"><span>RSI(14)</span><b id="rsi-val">—</b><span id="rsi-dir" class="dir"></span></div>
+      <canvas id="rsi-chart" height="70"></canvas>
+      <div class="ind-row"><span>MACD(12,26,9)</span><b id="macd-val">—</b><span id="macd-dir" class="dir"></span></div>
+      <canvas id="macd-chart" height="70"></canvas>
+      <div class="rule muted">RSI: &lt;30 &amp; rising → buy · &gt;70 &amp; falling → sell · MACD: up → buy · down → sell (vs prev week)</div>
+    </section>
+
+    <section class="panel" id="p-price">
+      <h2>BTC / USD</h2>
+      <div class="big price"><span id="price">—</span></div>
+      <div class="sub"><span id="chg" class="chg">—</span> <span class="muted">24h</span></div>
+      <div class="ind-row"><span class="muted">High</span><b id="hi">—</b></div>
+      <div class="ind-row"><span class="muted">Low</span><b id="lo">—</b></div>
+      <canvas id="spark" height="48"></canvas>
+    </section>
+  </main>
+
+  <div id="settings" class="modal hidden">
+    <div class="card">
+      <h3>Settings</h3>
+      <label>Coinglass API key <small>(needed for long/short numbers; map works without it)</small>
+        <input id="s-key" type="password" placeholder="paste key">
+      </label>
+      <label>Refresh (seconds) <input id="s-refresh" type="number" min="2" max="300" step="1"></label>
+      <label>Opacity <input id="s-opacity" type="range" min="0.4" max="1" step="0.05"></label>
+      <div class="row"><button id="s-save">Save</button><button id="s-cancel" class="ghost">Cancel</button></div>
+      <div id="s-err" class="err"></div>
+    </div>
+  </div>
+
+  <script src="indicators.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

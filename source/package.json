@@ -1,0 +1,46 @@
+{
+  "name": "btc-signal-widget",
+  "productName": "BTC Signal Widget",
+  "version": "1.0.0",
+  "description": "Always-on-top Bitcoin widget: Fear & Greed, liquidation map, weekly RSI/MACD, price, with buy/sell signal",
+  "main": "src/main.js",
+  "author": "James Cox",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder --win --mac",
+    "test": "node test/indicators.test.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.jamescox.btcsignalwidget",
+    "productName": "BTC Signal Widget",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.finance"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "repository": "local"
+}
